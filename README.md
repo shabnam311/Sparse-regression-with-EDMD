@@ -15,14 +15,14 @@ The resulting $A$ and $B$ matrices are sparse and highly predictive over long ho
 * **Multi-Step Open-Loop Validation**: Extensively validates the identified linear map's stability by predicting up to 30,000 steps forward in open-loop.
 
 ## Project Structure
-* `data_loader.py` - Parses the dataset, splits into Train/Val/Test, cleans irregular time steps, scales inputs/states on the train set, and prepares one-step transition pairs.
+* `data_loader.py` - Parses the dataset, splits into Train/Val/Test (60/5/5), cleans irregular time steps, scales inputs/states on the train set, and prepares one-step transition pairs.
 * `lifting.py` - Implements the $\phi(x)$ Koopman lifting dictionary. Expands the base state $[v_x, v_y, \omega]$ with polynomial terms up to degree 2 (creating 9 dimensions).
 * `koopman_fit.py` - Implements the STLSQ sparse regression using PySINDy. Sweeps over a grid of sparsity threshold values ($\lambda$) to find the optimal balance between accuracy and sparsity.
 * `validate.py` - Runs both one-step-ahead validation metrics (RMSE, MAE) and long-horizon multi-step (open-loop) rollouts on the Test set trajectories, generating comparison plots.
 * `main.py` - The primary orchestration script tying all components together.
 
 ## Performance Results
-The model was trained on roughly **1.2 million transition pairs** and validated against 11 entirely unseen test trajectories.
+The model was trained on roughly **1.46 million transition pairs** (from 60 training trajectories) and validated against 5 entirely unseen test trajectories.
 * **Optimal Sparsity**: With a threshold of $\lambda = 0.005$, the final $A$ matrix contains only 11 non-zero terms out of 81, and $B$ contains 3 out of 18. All 9 lifted features contribute to the final system.
 * **Predictive Accuracy**: Over long open-loop rollouts extending up to 29,000 continuous steps (290 seconds), the model demonstrated incredible stability.
     * Yaw rate ($\omega$) RMSE $\approx 0.0007$ rad/s

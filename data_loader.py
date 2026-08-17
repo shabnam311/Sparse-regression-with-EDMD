@@ -6,7 +6,7 @@ import random
 from sklearn.preprocessing import StandardScaler
 import pickle
 
-def load_and_preprocess_data(data_dir, split_ratio=(49, 10, 11), seed=42):
+def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
     """
     Loads trajectories from CSV files, drops irregular timesteps, splits by trajectory,
     scales data, and generates one-step transition pairs.
@@ -139,4 +139,4 @@ def load_and_preprocess_data(data_dir, split_ratio=(49, 10, 11), seed=42):
 
 if __name__ == "__main__":
     # Test the loader
-    data = load_and_preprocess_data('data/dataset', split_ratio=(49, 10, 11))
+    data = load_and_preprocess_data('data/dataset', split_ratio=(60, 5, 5))

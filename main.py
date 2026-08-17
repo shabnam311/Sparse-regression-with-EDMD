@@ -9,7 +9,7 @@ def main():
     
     # 1. Load Data
     data_dir = 'data/dataset'
-    data = load_and_preprocess_data(data_dir, split_ratio=(49, 10, 11))
+    data = load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5))
     
     X_train, U_train, X_prime_train, train_scaled = data['train']
     X_val, U_val, X_prime_val, val_scaled = data['val']
