@@ -30,21 +30,46 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
     
     print(f"Split sizes -> Train: {len(train_files)}, Val: {len(val_files)}, Test: {len(test_files)}")
     
-    # Define columns based on investigation
-    cols_to_use = ['Car.Gen.vx_1', 'Car.Gen.vy_1', 'Car.Virtual.Frc_1.x', 'Car.YawRate', 'Time', 'Vhcl.Steer.Ang']
-    
     def process_file_list(file_list, desc=""):
         trajectories = []
         for file in file_list:
+            # Read top 3 lines
+            with open(file, 'r') as f:
+                lines = [f.readline().strip() for _ in range(3)]
+                
+            names = lines[0].replace('"', '').split(',')[1:]
+            units = lines[2].replace('"', '').split(',')[1:]
+            
+            # Find indices
+            try:
+                idx_vx = names.index('Car.Gen.vx_1')
+                idx_vy = names.index('Car.Gen.vy_1')
+                idx_Fx = names.index('Car.Virtual.Frc_1.x')
+                idx_omega = names.index('Car.YawRate')
+                idx_time = names.index('Time')
+                idx_delta = names.index('Vhcl.Steer.Ang')
+            except ValueError as e:
+                print(f"Skipping {file} due to missing column: {e}")
+                continue
+                
             # Read CSV skipping the first 3 lines of header
             df = pd.read_csv(file, skiprows=3, header=None)
-            # Assuming headers map to columns 0-5 as:
-            # 0: vx, 1: vy, 2: Fx, 3: omega, 4: time, 5: delta
-            df.columns = cols_to_use
             
+            # Apply units conversion
+            time = df[idx_time].values
+            if units[idx_time] == 'ms':
+                time = time / 1000.0
+                
+            delta = df[idx_delta].values
+            if units[idx_delta] == 'deg':
+                delta = np.deg2rad(delta)
+                
             # Check dt
-            time = df['Time'].values
-            dt = np.diff(time, prepend=time[0]-0.01) # First diff will be 0.01 normally
+            nominal_dt = np.median(np.diff(time))
+            if np.isnan(nominal_dt) or nominal_dt <= 0:
+                nominal_dt = 0.01 # fallback
+                
+            dt = np.diff(time, prepend=time[0] - nominal_dt)
             
             invalid_mask = dt <= 0.0
             num_invalid = np.sum(invalid_mask)
@@ -52,18 +77,20 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
             if num_invalid > 0:
                 print(f"[{desc}] File {os.path.basename(file)}: dropped {num_invalid} rows with dt <= 0")
                 df = df[~invalid_mask]
+                time = time[~invalid_mask]
+                delta = delta[~invalid_mask]
                 
             # States and Controls
             # x = [vx, vy, omega]
             # u = [Fx, delta]
-            x_raw = df[['Car.Gen.vx_1', 'Car.Gen.vy_1', 'Car.YawRate']].values
-            u_raw = df[['Car.Virtual.Frc_1.x', 'Vhcl.Steer.Ang']].values
+            x_raw = np.column_stack((df[idx_vx].values, df[idx_vy].values, df[idx_omega].values))
+            u_raw = np.column_stack((df[idx_Fx].values, delta))
             
             trajectories.append({
                 'file': file,
                 'x_raw': x_raw,
                 'u_raw': u_raw,
-                'time': df['Time'].values
+                'time': time
             })
             
         return trajectories
@@ -80,8 +107,8 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
     all_train_x = np.vstack([traj['x_raw'] for traj in train_trajs])
     all_train_u = np.vstack([traj['u_raw'] for traj in train_trajs])
     
-    scaler_x = StandardScaler().fit(all_train_x)
-    scaler_u = StandardScaler().fit(all_train_u)
+    scaler_x = StandardScaler(with_mean=False).fit(all_train_x)
+    scaler_u = StandardScaler(with_mean=False).fit(all_train_u)
     
     # Save scalers for future use
     os.makedirs('models', exist_ok=True)

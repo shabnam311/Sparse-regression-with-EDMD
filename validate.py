@@ -24,7 +24,8 @@ def validate_one_step(A, B, Z_test, U_test, X_prime_raw_test, scaler_x):
     print("\n--- One-Step Ahead Prediction (Test Set) ---")
     states = ['vx (m/s)', 'vy (m/s)', 'omega (rad/s)']
     for i, state in enumerate(states):
-        print(f"  {state:15s} | RMSE: {rmse[i]:.4f} | MAE: {mae[i]:.4f}")
+        range_val = np.ptp(X_prime_raw_test[:, i])
+        print(f"  {state:15s} | RMSE: {rmse[i]:.4f} (Range: {range_val:.2f}) | MAE: {mae[i]:.4f}")
         
     return rmse, mae
 
@@ -76,7 +77,11 @@ def validate_rollout(A, B, test_trajectories, scaler_x, num_plots=3):
         errors = x_raw_true - x_pred_raw
         rmse = np.sqrt(np.mean(errors**2, axis=0))
         
-        print(f"Trajectory {os.path.basename(traj['file'])} (len={N}): vx RMSE={rmse[0]:.4f}, vy RMSE={rmse[1]:.4f}, omega RMSE={rmse[2]:.4f}")
+        vx_range = np.ptp(x_raw_true[:, 0])
+        vy_range = np.ptp(x_raw_true[:, 1])
+        omega_range = np.ptp(x_raw_true[:, 2])
+        
+        print(f"Trajectory {os.path.basename(traj['file'])} (len={N}): vx RMSE={rmse[0]:.4f} (rng {vx_range:.2f}), vy RMSE={rmse[1]:.4f} (rng {vy_range:.2f}), omega RMSE={rmse[2]:.4f} (rng {omega_range:.2f})")
         
         if idx_count < num_plots:
             fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)

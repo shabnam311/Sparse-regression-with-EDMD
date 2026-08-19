@@ -29,9 +29,9 @@ def get_feature_names():
     Returns the string names of the lifted features for interpretability.
     """
     return [
-        'vx', 'vy', 'omega',
-        'vx^2', 'vy^2', 'omega^2',
-        'vx*vy', 'vx*omega', 'vy*omega'
+        'vx_scaled', 'vy_scaled', 'omega_scaled',
+        'vx_scaled^2', 'vy_scaled^2', 'omega_scaled^2',
+        'vx_scaled*vy_scaled', 'vx_scaled*omega_scaled', 'vy_scaled*omega_scaled'
     ]
 
 if __name__ == "__main__":
