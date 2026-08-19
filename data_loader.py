@@ -64,6 +64,18 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
             if units[idx_delta] == 'deg':
                 delta = np.deg2rad(delta)
                 
+            vx = df[idx_vx].values
+            if units[idx_vx] == 'km/h':
+                vx = vx / 3.6
+                
+            vy = df[idx_vy].values
+            if units[idx_vy] == 'km/h':
+                vy = vy / 3.6
+                
+            omega = df[idx_omega].values
+            if units[idx_omega] == 'deg/s':
+                omega = np.deg2rad(omega)
+                
             # Check dt
             nominal_dt = np.median(np.diff(time))
             if np.isnan(nominal_dt) or nominal_dt <= 0:
@@ -76,15 +88,22 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
             
             if num_invalid > 0:
                 print(f"[{desc}] File {os.path.basename(file)}: dropped {num_invalid} rows with dt <= 0")
-                df = df[~invalid_mask]
                 time = time[~invalid_mask]
                 delta = delta[~invalid_mask]
+                vx = vx[~invalid_mask]
+                vy = vy[~invalid_mask]
+                omega = omega[~invalid_mask]
+                # Fx we extract later, so let's extract it now
+                
+            Fx = df[idx_Fx].values
+            if num_invalid > 0:
+                Fx = Fx[~invalid_mask]
                 
             # States and Controls
             # x = [vx, vy, omega]
             # u = [Fx, delta]
-            x_raw = np.column_stack((df[idx_vx].values, df[idx_vy].values, df[idx_omega].values))
-            u_raw = np.column_stack((df[idx_Fx].values, delta))
+            x_raw = np.column_stack((vx, vy, omega))
+            u_raw = np.column_stack((Fx, delta))
             
             trajectories.append({
                 'file': file,

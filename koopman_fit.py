@@ -39,9 +39,20 @@ def fit_koopman_model(Z_train, U_train, Z_prime_train, Z_val, U_val, Z_prime_val
         
         print(f"  lambda = {lam:.3f} | Val RMSE: {val_rmse:.6f} | Active terms: {active_terms}")
         
-        if val_rmse < best_error:
-            best_error = val_rmse
-            best_lam = lam
+    # Find the best RMSE
+    best_rmse = min([r['val_rmse'] for r in results])
+    
+    # Pick the sparsest model (highest lambda) that is within 5% of the best RMSE
+    # This prevents selecting overly complex models that blow up in open-loop rollout
+    threshold_rmse = best_rmse * 1.05
+    
+    # Filter candidates
+    candidates = [r for r in results if r['val_rmse'] <= threshold_rmse]
+    
+    # Pick the one with the fewest active terms
+    best_candidate = min(candidates, key=lambda x: x['active_terms'])
+    best_lam = best_candidate['lambda']
+    best_error = best_candidate['val_rmse']
             
     print(f"Selected lambda: {best_lam} with Val RMSE: {best_error:.6f}")
     
