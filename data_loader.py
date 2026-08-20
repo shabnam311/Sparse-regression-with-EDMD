@@ -55,6 +55,9 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
             # Read CSV skipping the first 3 lines of header
             df = pd.read_csv(file, skiprows=3, header=None)
             
+            # Drop any rows that have missing values (e.g., empty trailing rows)
+            df.dropna(inplace=True)
+            
             # Apply units conversion
             time = df[idx_time].values
             if units[idx_time] == 'ms':
