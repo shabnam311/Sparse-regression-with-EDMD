@@ -39,43 +39,21 @@ def generate_visual_reports():
     os.makedirs('results', exist_ok=True)
     
     # -------------------------------------------------------------
-    # Plot 1: Clean Accuracy & RMSE Bar Charts (Super intuitive!)
+    # Plot 1: Clean Single-Panel Accuracy Bar Chart (No red RMSE bars)
     # -------------------------------------------------------------
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig, ax1 = plt.subplots(figsize=(8, 6))
     
-    # Left: Accuracy Percentages
     colors_acc = ['#2ca02c', '#1f77b4', '#9467bd']
-    bars1 = ax1.bar(states, accuracies, color=colors_acc, width=0.55, edgecolor='black', linewidth=1.2)
+    bars1 = ax1.bar(states, accuracies, color=colors_acc, width=0.45, edgecolor='black', linewidth=1.2)
     ax1.set_ylim(95, 100.5)
     ax1.set_ylabel('Model Accuracy (%)', fontsize=12, fontweight='bold')
-    ax1.set_title('1-Step Prediction Accuracy (Test Set)', fontsize=13, fontweight='bold', pad=15)
+    ax1.set_title('1-Step Prediction Accuracy (Test Set)', fontsize=14, fontweight='bold', pad=15)
     ax1.grid(axis='y', linestyle='--', alpha=0.7)
     
     for bar, acc in zip(bars1, accuracies):
         yval = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 0.1, f'{acc:.2f}%', 
-                 ha='center', va='bottom', fontsize=11, fontweight='bold')
-        
-    # Right: RMSE vs Physical Range
-    x_pos = np.arange(len(states))
-    width = 0.35
-    
-    # Plot normalized comparison: Log scale for clarity
-    bars2 = ax2.bar(x_pos - width/2, rmse, width, label='RMSE (Absolute Error)', color='#d62728', edgecolor='black')
-    bars3 = ax2.bar(x_pos + width/2, ranges, width, label='Operating Range (Total Span)', color='#7f7f7f', alpha=0.6, edgecolor='black')
-    
-    ax2.set_yscale('log')
-    ax2.set_xticks(x_pos)
-    ax2.set_xticklabels(states, fontsize=11)
-    ax2.set_ylabel('Value in Physical Units (Log Scale)', fontsize=12, fontweight='bold')
-    ax2.set_title('RMSE vs. Full Operational Range', fontsize=13, fontweight='bold', pad=15)
-    ax2.legend(fontsize=11)
-    ax2.grid(axis='y', linestyle='--', alpha=0.7)
-    
-    # Annotate absolute numbers
-    for i in range(len(states)):
-        ax2.text(x_pos[i] - width/2, rmse[i] * 1.3, f'{rmse[i]:.4f}\n{units[i]}', ha='center', fontsize=9, fontweight='bold', color='#a00000')
-        ax2.text(x_pos[i] + width/2, ranges[i] * 1.3, f'{ranges[i]:.2f}\n{units[i]}', ha='center', fontsize=9, fontweight='bold')
+        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 0.08, f'{acc:.2f}%', 
+                 ha='center', va='bottom', fontsize=12, fontweight='bold')
         
     plt.tight_layout()
     plot1_path = 'results/accuracy_and_rmse_summary.png'
