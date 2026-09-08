@@ -33,52 +33,77 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
     def process_file_list(file_list, desc=""):
         trajectories = []
         for file in file_list:
-            # Read top 3 lines
-            with open(file, 'r') as f:
-                lines = [f.readline().strip() for _ in range(3)]
+            # Check header format
+            with open(file, 'r', encoding='utf-8', errors='ignore') as f:
+                first_line = f.readline().strip()
                 
-            names = lines[0].replace('"', '').split(',')[1:]
-            units = lines[2].replace('"', '').split(',')[1:]
-            
-            # Find indices
-            try:
-                idx_vx = names.index('Car.Gen.vx_1')
-                idx_vy = names.index('Car.Gen.vy_1')
-                idx_Fx = names.index('Car.Virtual.Frc_1.x')
-                idx_omega = names.index('Car.YawRate')
-                idx_time = names.index('Time')
-                idx_delta = names.index('Vhcl.Steer.Ang')
-            except ValueError as e:
-                print(f"Skipping {file} due to missing column: {e}")
-                continue
+            if first_line.startswith('#'):
+                # 3-line TruckMaker header format
+                with open(file, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = [f.readline().strip() for _ in range(3)]
+                names = lines[0].replace('"', '').split(',')[1:]
+                units = lines[2].replace('"', '').split(',')[1:]
                 
-            # Read CSV skipping the first 3 lines of header
-            df = pd.read_csv(file, skiprows=3, header=None)
-            
-            # Drop any rows that have missing values (e.g., empty trailing rows)
-            df.dropna(inplace=True)
-            
-            # Apply units conversion
-            time = df[idx_time].values
-            if units[idx_time] == 'ms':
-                time = time / 1000.0
+                try:
+                    idx_vx = names.index('Car.Gen.vx_1')
+                    idx_vy = names.index('Car.Gen.vy_1')
+                    idx_Fx = names.index('Car.Virtual.Frc_1.x')
+                    idx_omega = names.index('Car.YawRate')
+                    idx_time = names.index('Time')
+                    idx_delta = names.index('Vhcl.Steer.Ang')
+                except ValueError as e:
+                    print(f"Skipping {file} due to missing column: {e}")
+                    continue
+                    
+                df = pd.read_csv(file, skiprows=3, header=None)
+                df.dropna(inplace=True)
                 
-            delta = df[idx_delta].values
-            if units[idx_delta] == 'deg':
-                delta = np.deg2rad(delta)
+                time = df[idx_time].values
+                if units[idx_time] == 'ms':
+                    time = time / 1000.0
+                    
+                delta = df[idx_delta].values
+                if units[idx_delta] == 'deg':
+                    delta = np.deg2rad(delta)
+                    
+                vx = df[idx_vx].values
+                if units[idx_vx] == 'km/h':
+                    vx = vx / 3.6
+                    
+                vy = df[idx_vy].values
+                if units[idx_vy] == 'km/h':
+                    vy = vy / 3.6
+                    
+                omega = df[idx_omega].values
+                if units[idx_omega] == 'deg/s':
+                    omega = np.deg2rad(omega)
+                    
+                Fx = df[idx_Fx].values
+            else:
+                # Standard CSV format (e.g., time,Fx,delta,vx,vy,omega)
+                df = pd.read_csv(file)
+                df.dropna(inplace=True)
                 
-            vx = df[idx_vx].values
-            if units[idx_vx] == 'km/h':
-                vx = vx / 3.6
+                # Normalize column names for flexible matching
+                col_map = {c.strip().lower(): c for c in df.columns}
                 
-            vy = df[idx_vy].values
-            if units[idx_vy] == 'km/h':
-                vy = vy / 3.6
-                
-            omega = df[idx_omega].values
-            if units[idx_omega] == 'deg/s':
-                omega = np.deg2rad(omega)
-                
+                def get_col(candidates):
+                    for cand in candidates:
+                        if cand.lower() in col_map:
+                            return df[col_map[cand.lower()]].values
+                    raise ValueError(f"None of {candidates} found in {df.columns}")
+                    
+                try:
+                    time = get_col(['time', 'Time'])
+                    Fx = get_col(['Fx', 'fx', 'F_x', 'Force'])
+                    delta = get_col(['delta', 'Steer', 'steer', 'delta_rad'])
+                    vx = get_col(['vx', 'v_x', 'velocity_x'])
+                    vy = get_col(['vy', 'v_y', 'velocity_y'])
+                    omega = get_col(['omega', 'w', 'yaw_rate'])
+                except ValueError as e:
+                    print(f"Skipping {file} due to missing column: {e}")
+                    continue
+
             # Check dt
             nominal_dt = np.median(np.diff(time))
             if np.isnan(nominal_dt) or nominal_dt <= 0:
@@ -96,10 +121,6 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
                 vx = vx[~invalid_mask]
                 vy = vy[~invalid_mask]
                 omega = omega[~invalid_mask]
-                # Fx we extract later, so let's extract it now
-                
-            Fx = df[idx_Fx].values
-            if num_invalid > 0:
                 Fx = Fx[~invalid_mask]
                 
             # States and Controls
