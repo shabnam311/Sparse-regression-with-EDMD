@@ -14,6 +14,9 @@ def load_and_preprocess_data(data_dir, split_ratio=(60, 5, 5), seed=42):
     random.seed(seed)
     
     # 1. Get all trajectory files
+    if not os.path.exists(data_dir) and os.path.exists(os.path.join('..', data_dir)):
+        data_dir = os.path.join('..', data_dir)
+        
     all_files = glob.glob(os.path.join(data_dir, "*.csv"))
     if not all_files:
         all_files = glob.glob(os.path.join(data_dir, "*")) # In case they don't have .csv extension
