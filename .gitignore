@@ -3,3 +3,5 @@ __pycache__/
 data/
 *.zip
 .DS_Store
+novel_bayes/results_novel/
+compare/*.csv
