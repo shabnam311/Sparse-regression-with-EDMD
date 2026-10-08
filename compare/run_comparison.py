@@ -1,10 +1,10 @@
-"""Fair head-to-head: baseline (STLSQ + recursive rollout) vs novel (Bayesian condensed multi-step).
+"""Fair head-to-head: baseline (STLSQ + recursive rollout) vs Bayesian (Bayesian condensed multi-step).
 Same data split, same scaling, same lifting, same windows, same test set.
 Run from repo root:  python compare/run_comparison.py --source synthetic"""
 import os, sys, argparse, csv
 import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, 'novel_bayes'))
+sys.path.insert(0, os.path.join(ROOT, 'bayes_pipeline'))
 from config import Cfg
 from lifting_np import lift_poly2
 from windows import accumulate_stats, build_eval_windows
@@ -37,17 +37,17 @@ def main(source):
         print("max |A_repo - A_ours| =", float(np.abs(Ar - A).max()) if Ar.shape == A.shape else 'shape mismatch')
     Pt, Yt = build_eval_windows(data['test'], cfg.H, lift_poly2, cfg.test_stride)
     names = ['vx', 'vy', 'omega']; rows = []
-    for nm, mdl in [('baseline_stlsq_recursive', sp), ('baseline_stlsq_tuned_lambda', sp_tuned), ('novel_bayes_condensed', bm)]:
+    for nm, mdl in [('baseline_stlsq_recursive', sp), ('baseline_stlsq_tuned_lambda', sp_tuned), ('bayes_pipeline_condensed', bm)]:
         X = mdl.predict_x(Pt)
         for k in range(cfg.H):
             for j in range(3):
                 rows.append(dict(model=nm, k=k + 1, state=names[j], rmse=float(np.sqrt(np.mean((X[:, k, j] - Yt[:, k, j]) ** 2)))))
-    print(f"{'k':>3} {'state':>6} {'base(lam)':>10} {'base(tuned)':>10} {'novel':>10}")
+    print(f"{'k':>3} {'state':>6} {'base(lam)':>10} {'base(tuned)':>10} {'Bayesian':>10}")
     for k in range(1, cfg.H + 1):
         for s in names:
             g = lambda pre: [r['rmse'] for r in rows if r['model'] == pre and r['k'] == k and r['state'] == s][0]
-            print(f"{k:>3} {s:>6} {g('baseline_stlsq_recursive'):>10.5f} {g('baseline_stlsq_tuned_lambda'):>10.5f} {g('novel_bayes_condensed'):>10.5f}")
-    print("nnz baseline:", int((A != 0).sum() + (B != 0).sum()), " nnz novel (sum over k, rows):", int(sum(bm.nnz)))
+            print(f"{k:>3} {s:>6} {g('baseline_stlsq_recursive'):>10.5f} {g('baseline_stlsq_tuned_lambda'):>10.5f} {g('bayes_pipeline_condensed'):>10.5f}")
+    print("nnz baseline:", int((A != 0).sum() + (B != 0).sum()), " nnz Bayesian (sum over k, rows):", int(sum(bm.nnz)))
     os.makedirs(os.path.join(ROOT, 'compare'), exist_ok=True)
     with open(os.path.join(ROOT, 'compare', 'rmse_by_horizon.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=['model', 'k', 'state', 'rmse']); w.writeheader(); w.writerows(rows)

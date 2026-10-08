@@ -1,6 +1,6 @@
 """Violation-rate vs training-set-size experiment (the key plot) for BOTH pipelines.
-   python run_novel.py --source synthetic
-Output: results_novel/sweep.csv and results_novel/violation_vs_N.png"""
+   python run_bayes.py --source synthetic
+Output: results_bayes/sweep.csv and results_bayes/violation_vs_N.png"""
 import argparse, csv, os, time
 import numpy as np
 from config import Cfg
@@ -15,7 +15,7 @@ BAYES_SCHEMES = ['none', 'conformal_onestep', 'conformal_horizon', 'posterior_ep
 STLSQ_SCHEMES = ['none', 'conformal_onestep', 'conformal_horizon']
 
 
-def run(data, cfg, out_dir='results_novel', verbose=True):
+def run(data, cfg, out_dir='results_bayes', verbose=True):
     os.makedirs(out_dir, exist_ok=True)
     rng = np.random.default_rng(cfg.seed)
     total = count_windows(data['train'], cfg.H)

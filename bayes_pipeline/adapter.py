@@ -1,8 +1,8 @@
-"""Glue between the ORIGINAL repo (baseline_stlsq/) and the novel pipeline.
+"""Glue between the ORIGINAL repo (baseline_stlsq/) and the Bayesian pipeline.
 
 get_data() must return {'train': [(X,U),...], 'val': [...], 'test': [...]} where
   X : (T, 3) SCALED states [vx, vy, omega],   U : (T, m) SCALED inputs  (U[t] acts between X[t], X[t+1])
-Fill in `_from_repo()` using the functions of baseline_stlsq/data_loader.py (see README_novel.md, point 33).
+Fill in `_from_repo()` using the functions of baseline_stlsq/data_loader.py (see README_Bayesian.md, point 33).
 Until then, `source='synthetic'` lets you smoke-test everything."""
 import numpy as np
 

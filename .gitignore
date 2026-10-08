@@ -3,5 +3,5 @@ __pycache__/
 data/
 *.zip
 .DS_Store
-novel_bayes/results_novel/
+bayes_pipeline/results_bayes/
 compare/*.csv

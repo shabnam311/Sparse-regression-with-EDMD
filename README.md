@@ -3,7 +3,7 @@
 This repository contains two data-driven Koopman operator modeling and constraint-tightening pipelines for vehicle dynamic modeling and linear Model Predictive Control (MPC):
 
 1. **Baseline STLSQ Pipeline (`baseline_stlsq/`)**: PySINDy-based Sequential Thresholded Least Squares (STLSQ) Extended Dynamic Mode Decomposition (EDMD) with 1-step pair regression and degree-2 polynomial lifting.
-2. **Novel Bayesian Pipeline (`novel_bayes/`)**: Condensed Multi-step Bayesian Koopman predictor with misspecification-aware constraint tightening (Hybrid, Conformal, Epistemic Posterior).
+2. **Bayesian Pipeline (`bayes_pipeline/`)**: Condensed Multi-step Bayesian Koopman predictor with misspecification-aware constraint tightening (Hybrid, Conformal, Epistemic Posterior).
 3. **Head-to-Head Comparison (`compare/`)**: Comparison suite evaluating multi-step prediction error (RMSE) and constraint violation rates across horizon lengths and dataset sizes.
 
 ---
@@ -21,7 +21,7 @@ This repository contains two data-driven Koopman operator modeling and constrain
 │   ├── models/          # Trained A, B matrices and scaler files
 │   └── results/         # Baseline figures, reports, and validation plots
 │
-├── novel_bayes/         # Novel Bayesian Multi-Step & Tightening pipeline
+├── bayes_pipeline/         # Bayesian Multi-Step & Tightening pipeline
 │   ├── adapter.py       # Data adapter wrapping baseline_stlsq/data_loader.py
 │   ├── config.py        # Central configuration settings
 │   ├── lifting_np.py    # Pure-NumPy degree-2 polynomial lifting
@@ -30,7 +30,7 @@ This repository contains two data-driven Koopman operator modeling and constrain
 │   ├── stlsq_numpy.py   # NumPy STLSQ baseline from sufficient statistics
 │   ├── tightening.py    # Conformal, Epistemic, and Hybrid tightening schemes
 │   ├── mpc_tightened.py # SOCP & linear QP-tightened MPC solver
-│   ├── run_novel.py     # Violation rate vs training size sweep experiment
+│   ├── run_bayes.py     # Violation rate vs training size sweep experiment
 │   ├── run_closed_loop.py # Closed-loop MPC simulation demo
 │   ├── synthetic.py     # Synthetic plant simulation generator for unit testing
 │   └── tests/           # Unit test suite
@@ -65,7 +65,7 @@ py run_open_loop_scenarios.py
 
 ---
 
-## 2. Novel Bayesian Pipeline (`novel_bayes/`)
+## 2. Bayesian Pipeline (`bayes_pipeline/`)
 
 Identifies a condensed multi-step predictor:
 
@@ -83,19 +83,19 @@ where $\phi_k = [z_t, u_t, u_{t+1}, \dots, u_{t+k}]^T$.
 
 ### Running Unit Tests
 ```bash
-py -m pytest novel_bayes/tests
+py -m pytest bayes_pipeline/tests
 ```
 
 ### Running the Data-Size Sweep Experiment
 ```bash
-py novel_bayes/run_novel.py --source repo
+py bayes_pipeline/run_bayes.py --source repo
 ```
 
 ---
 
 ## 3. Head-to-Head Comparison (`compare/`)
 
-To compare multi-step prediction RMSE across prediction horizons between the baseline STLSQ model and the novel Bayesian condensed model:
+To compare multi-step prediction RMSE across prediction horizons between the baseline STLSQ model and the Bayesian condensed model:
 
 ```bash
 py compare/run_comparison.py --source repo
@@ -106,7 +106,7 @@ py compare/run_comparison.py --source repo
 ## Experimental Results Summary
 
 ### Multi-Step RMSE Comparison ($k=10$ steps / $0.1\text{ s}$)
-| State Variable | Baseline STLSQ (Tuned $\lambda$) | Novel Bayesian Condensed |
+| State Variable | Baseline STLSQ (Tuned $\lambda$) | Bayesian Condensed |
 | :--- | :--- | :--- |
 | **$v_x$ (Longitudinal Velocity)** | `0.00047 m/s` | **`0.00046 m/s`** |
 | **$v_y$ (Lateral Velocity)** | `0.02212 m/s` | **`0.02039 m/s`** |

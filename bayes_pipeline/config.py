@@ -1,4 +1,4 @@
-"""Central settings for the novel (Bayesian multi-step) pipeline."""
+"""Central settings for the Bayesian (Bayesian multi-step) pipeline."""
 from dataclasses import dataclass
 
 
