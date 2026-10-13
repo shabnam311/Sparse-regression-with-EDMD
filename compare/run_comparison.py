@@ -34,7 +34,10 @@ def main(source):
     if os.path.exists(pa) and os.path.exists(pb):
         Ar, Br = np.load(pa), np.load(pb)
         print(f"repo A nnz={int((Ar!=0).sum())}/{Ar.size}  ours={int((A!=0).sum())}   repo B nnz={int((Br!=0).sum())}/{Br.size}  ours={int((B!=0).sum())}")
-        print("max |A_repo - A_ours| =", float(np.abs(Ar - A).max()) if Ar.shape == A.shape else 'shape mismatch')
+        print("max |A_repo - A_ours(train)| =", float(np.abs(Ar - A).max()) if Ar.shape == A.shape else 'shape mismatch')
+        st_tv = accumulate_stats(data['train'] + data['val'], 1, lift_poly2)
+        Atv, Btv = stlsq_from_stats(st_tv, cfg.stlsq_lambda, cfg.stlsq_alpha)
+        print("max |A_repo - A_ours(train+val)| =", float(np.abs(Ar - Atv).max()) if Ar.shape == Atv.shape else 'shape mismatch')
     Pt, Yt = build_eval_windows(data['test'], cfg.H, lift_poly2, cfg.test_stride)
     names = ['vx', 'vy', 'omega']; rows = []
     for nm, mdl in [('baseline_stlsq_recursive', sp), ('baseline_stlsq_tuned_lambda', sp_tuned), ('bayes_pipeline_condensed', bm)]:

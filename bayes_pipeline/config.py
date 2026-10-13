@@ -13,7 +13,7 @@ class Cfg:
     # constrained output y = c . [vx, vy, omega] in SCALED units (default: yaw rate)
     c: tuple = (0.0, 0.0, 1.0)
     # STLSQ baseline (match what koopman_fit.py uses!)
-    stlsq_lambda: float = 0.005
+    stlsq_lambda: float = 0.05
     stlsq_alpha: float = 0.05
     clip_bias_nonneg: bool = True    # hybrid bias term q_k >= 0 (more conservative)
     seed: int = 0

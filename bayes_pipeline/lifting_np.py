@@ -6,12 +6,10 @@ import numpy as np
 
 def lift_poly2(X):
     X = np.atleast_2d(np.asarray(X, dtype=float))
-    n = X.shape[1]
-    cols = [X[:, i] for i in range(n)]
-    for i in range(n):
-        for j in range(i, n):
-            cols.append(X[:, i] * X[:, j])
-    return np.stack(cols, axis=1)
+    vx, vy, omega = X[:, 0:1], X[:, 1:2], X[:, 2:3]
+    vx_sq, vy_sq, omega_sq = vx**2, vy**2, omega**2
+    vx_vy, vx_omega, vy_omega = vx*vy, vx*omega, vy*omega
+    return np.hstack([vx, vy, omega, vx_sq, vy_sq, omega_sq, vx_vy, vx_omega, vy_omega])
 
 
 def check_against_repo(repo_lift_fn, X_sample):

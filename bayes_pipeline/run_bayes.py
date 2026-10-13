@@ -15,7 +15,9 @@ BAYES_SCHEMES = ['none', 'conformal_onestep', 'conformal_horizon', 'posterior_ep
 STLSQ_SCHEMES = ['none', 'conformal_onestep', 'conformal_horizon']
 
 
-def run(data, cfg, out_dir='results_bayes', verbose=True):
+DEFAULT_OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results_bayes')
+
+def run(data, cfg, out_dir=DEFAULT_OUT_DIR, verbose=True):
     os.makedirs(out_dir, exist_ok=True)
     rng = np.random.default_rng(cfg.seed)
     total = count_windows(data['train'], cfg.H)

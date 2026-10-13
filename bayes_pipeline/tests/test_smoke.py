@@ -9,7 +9,7 @@ from tightening import Tightener, conf_quantile
 
 def test_lifting_order():
     x = np.array([[2., 3., 5.]])
-    assert np.allclose(lift_poly2(x)[0], [2, 3, 5, 4, 6, 10, 9, 15, 25])
+    assert np.allclose(lift_poly2(x)[0], [2, 3, 5, 4, 9, 25, 6, 10, 15])
 
 
 def test_ard_recovers_sparse_weights():
@@ -44,3 +44,11 @@ def test_conformal_quantile_coverage():
     rng = np.random.default_rng(2); cal = np.abs(rng.standard_normal(2000)); new = np.abs(rng.standard_normal(20000))
     q = conf_quantile(cal, 0.1)
     assert 0.87 < (new <= q).mean() < 0.93
+
+
+if __name__ == '__main__':
+    test_lifting_order()
+    test_ard_recovers_sparse_weights()
+    test_linear_system_is_identified_and_uncertainty_shrinks()
+    test_conformal_quantile_coverage()
+    print("All unit tests in test_smoke.py passed successfully.")
