@@ -52,6 +52,7 @@ Core dependencies:
 │   └── results/                    # Rollout plots, dashboards, and reports
 │
 ├── bayes_pipeline/                 # Bayesian Multi-Step & Tightening pipeline
+│   ├── main.py                     # Bayesian Koopman operator fitting & artifact export
 │   ├── adapter.py                  # Data adapter wrapping baseline loader
 │   ├── config.py                   # Central settings (horizons, epsilon, strides)
 │   ├── lifting_np.py               # Pure-NumPy degree-2 polynomial lifting
@@ -63,6 +64,12 @@ Core dependencies:
 │   ├── run_bayes.py                # Violation rate vs training size sweep experiment
 │   ├── run_closed_loop.py          # Closed-loop simulation demo
 │   ├── synthetic.py                # Synthetic plant simulation generator
+│   ├── models_bayes/               # Saved Bayesian matrices, covariance tensor, & noise var
+│   │   ├── A_bayes.npy / .csv      # Posterior mean A matrix (9x9)
+│   │   ├── B_bayes.npy / .csv      # Posterior mean B matrix (9x2)
+│   │   ├── covariance_Sigma.npy    # Parameter covariance tensor (9x11x11)
+│   │   ├── noise_variance.npy      # Measurement/residual noise variance (1/rho)
+│   │   └── bayesian_model_summary.txt # Human-readable parameter summary & SE table
 │   └── tests/
 │       └── test_smoke.py           # Unit tests (lifting order, ARD, uncertainty shrinkage)
 │
@@ -113,6 +120,12 @@ Evaluated over $N = 400$ steps ($4.0\text{ seconds}$ at $100\text{ Hz}$):
 
 ## 2. Running the Bayesian Multi-Step Pipeline (`bayes_pipeline/`)
 
+### Fit Bayesian Koopman Model & Export Matrices / Covariance
+```bash
+py bayes_pipeline/main.py
+```
+This fits the Bayesian Koopman operator via Automatic Relevance Determination (ARD), extracts the posterior mean matrices ($A_{\text{bayes}} \in \mathbb{R}^{9 \times 9}, B_{\text{bayes}} \in \mathbb{R}^{9 \times 2}$), parameter covariance tensor ($\Sigma \in \mathbb{R}^{9 \times 11 \times 11}$), and measurement/residual noise variance ($\sigma_{\text{noise}}^2 = 1/\rho \in \mathbb{R}^9$), saving all artifacts into `bayes_pipeline/models_bayes/`.
+
 ### Run Unit Tests
 ```bash
 py bayes_pipeline/tests/test_smoke.py
@@ -156,7 +169,7 @@ Evaluated on held-out test windows:
 ### A. Benchmark Scenarios: Baseline STLSQ vs. Bayesian Koopman vs. DNN-30 Reference
 Evaluated on the exact ground-truth logs in `baseline_stlsq/Test 1/` (`scenario_1_simulation_data.csv` and `scenario_2_simulation_data.csv`) over $N = 400$ steps ($4.0\text{ seconds}$ at $100\text{ Hz}$):
 
-To run this comparison and regenerate the 4-panel comparison plots:
+To run this comparison and regenerate the 4-panel comparison plots (including $\pm 2\sigma$ Bayesian predictive uncertainty bands combining parameter covariance $\Sigma$ and residual noise variance $\sigma_{\text{noise}}^2$):
 ```bash
 py compare/compare_scenarios.py
 ```

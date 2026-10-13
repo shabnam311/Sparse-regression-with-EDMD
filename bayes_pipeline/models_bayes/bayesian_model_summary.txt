@@ -1,0 +1,47 @@
+========================================================================
+           BAYESIAN KOOPMAN OPERATOR MODEL SUMMARY
+========================================================================
+
+Active terms in A_bayes: 32 / 81
+Active terms in B_bayes: 7 / 18
+
+Estimated Measurement / Residual Noise Variance (1 / rho):
+  vx_scaled             : Var = 1.5667e-07, Std = 3.9582e-04
+  vy_scaled             : Var = 9.4274e-06, Std = 3.0704e-03
+  omega_scaled          : Var = 2.8627e-06, Std = 1.6920e-03
+
+=== MATRIX A_bayes (9x9 Posterior Mean) ===
+                        vx_scaled  vy_scaled  omega_scaled  vx_scaled^2  vy_scaled^2  omega_scaled^2  vx_scaled*vy_scaled  vx_scaled*omega_scaled  vy_scaled*omega_scaled
+vx_scaled                0.999989   0.000000      0.000000     0.000000     0.000000        0.000000             0.000000                0.000000                0.000000
+vy_scaled                0.000000   0.963996      0.104401     0.000000     0.000000        0.000000             0.000000               -0.012726                0.000000
+omega_scaled             0.000000   0.017197      0.907404     0.000000     0.000000        0.000000             0.000000                0.006620                0.000000
+vx_scaled^2              0.000000   0.000000      0.000000     0.999885     0.000000        0.000000             0.000000                0.000000                0.000000
+vy_scaled^2              0.000000   0.069089     -0.110742     0.000000     0.995065       -0.003719             0.000000                0.022668               -0.009273
+omega_scaled^2           0.000000   0.040537     -0.101508     0.000000     0.004482        1.005621             0.000000                0.013666                0.010697
+vx_scaled*vy_scaled      0.000000  -0.667352      1.049562     0.000000     0.000000        0.000000             1.019425               -0.138712                0.000000
+vx_scaled*omega_scaled   0.000000   0.248283     -1.038966     0.000000     0.000000        0.000000            -0.003875                1.074696                0.000000
+vy_scaled*omega_scaled   0.000000  -0.056411      0.110223     0.000000     0.000000        0.000000             0.000000               -0.018871                0.999930
+
+=== MATRIX B_bayes (9x2 Posterior Mean) ===
+                        Fx_scaled  delta_scaled
+vx_scaled                0.000000      0.000000
+vy_scaled                0.000000      0.000000
+omega_scaled             0.000000      0.036885
+vx_scaled^2              0.009004      0.000000
+vy_scaled^2              0.000000     -0.070950
+omega_scaled^2           0.000000     -0.008990
+vx_scaled*vy_scaled      0.000000      0.034084
+vx_scaled*omega_scaled   0.000000      0.420472
+vy_scaled*omega_scaled   0.000000      0.041969
+
+=== PARAMETER STANDARD ERRORS (sqrt(diag(Sigma))) ===
+                        vx_scaled  vy_scaled  omega_scaled  vx_scaled^2  vy_scaled^2  omega_scaled^2  vx_scaled*vy_scaled  vx_scaled*omega_scaled  vy_scaled*omega_scaled  Fx_scaled  delta_scaled
+vx_scaled                     0.0   0.000000      0.000000          0.0     0.000000        0.000000             0.000000                0.000000                0.000000   0.000000      0.000000
+vy_scaled                     0.0   0.000075      0.000221          0.0     0.000000        0.000000             0.000000                0.000027                0.000000   0.000000      0.000000
+omega_scaled                  0.0   0.000045      0.000122          0.0     0.000000        0.000000             0.000000                0.000016                0.000000   0.000000      0.000055
+vx_scaled^2                   0.0   0.000000      0.000000          0.0     0.000000        0.000000             0.000000                0.000000                0.000000   0.000004      0.000000
+vy_scaled^2                   0.0   0.000272      0.000738          0.0     0.000118        0.000117             0.000000                0.000094                0.000247   0.000000      0.000329
+omega_scaled^2                0.0   0.000151      0.000411          0.0     0.000066        0.000065             0.000000                0.000053                0.000138   0.000000      0.000183
+vx_scaled*vy_scaled           0.0   0.003424      0.003371          0.0     0.000000        0.000000             0.000265                0.000364                0.000000   0.000000      0.001158
+vx_scaled*omega_scaled        0.0   0.001886      0.001858          0.0     0.000000        0.000000             0.000146                0.000201                0.000000   0.000000      0.000639
+vy_scaled*omega_scaled        0.0   0.000189      0.000511          0.0     0.000000        0.000000             0.000000                0.000065                0.000007   0.000000      0.000229
