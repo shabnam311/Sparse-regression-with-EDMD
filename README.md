@@ -68,10 +68,13 @@ Core dependencies:
 │   │   ├── A_bayes.npy / .csv      # Posterior mean A matrix (9x9)
 │   │   ├── B_bayes.npy / .csv      # Posterior mean B matrix (9x2)
 │   │   ├── covariance_Sigma.npy    # Parameter covariance tensor (9x11x11)
-│   │   ├── noise_variance.npy      # Measurement/residual noise variance (1/rho)
+│   │   ├── noise_variance.npy      # Measurement/residual noise variance (scaled)
+│   │   ├── noise_variance_physical.npy # Noise variance in physical engineering units
+│   │   ├── scaler_params.npz       # Standard scaler parameters for deployment
+│   │   ├── feature_metadata.json   # Feature definitions, orders, and 1-step errors
 │   │   └── bayesian_model_summary.txt # Human-readable parameter summary & SE table
 │   └── tests/
-│       └── test_smoke.py           # Unit tests (lifting order, ARD, uncertainty shrinkage)
+│       └── test_smoke.py           # Unit tests (lifting order, ARD, uncertainty shrinkage, joint coverage)
 │
 ├── compare/                        # Head-to-head comparison suite
 │   ├── compare_scenarios.py        # Compares Baseline & Bayesian on Scenario 1 & 2
@@ -141,9 +144,11 @@ Tightening is evaluated on the scalar output $y = c^T x$ (scaled yaw rate $\omeg
 * `none`: Unconstrained margin ($\delta = 0$).
 * `conformal_onestep`: Constant margin based on 1-step validation error quantile.
 * `conformal_horizon`: Horizon-indexed split-conformal quantile $q_k$.
+* `conformal_joint`: Bonferroni-corrected split-conformal quantile $q_k(\epsilon/H)$ for joint horizon coverage.
 * `posterior_epi`: Epistemic parameter uncertainty margin $\kappa \cdot \sigma_{\text{epi}}(\phi_k)$.
 * `posterior_pred`: Full Bayesian predictive uncertainty margin $\kappa \cdot \sqrt{\sigma_{\text{epi}}^2 + \sigma_{\text{noise}}^2}$.
 * `hybrid`: Misspecification-aware hybrid margin $\kappa \cdot \sigma_{\text{epi}}(\phi_k) + q_k$.
+* `hybrid_joint`: Hybrid margin with Bonferroni-corrected $q_k(\epsilon/H)$ for joint horizon coverage.
 
 ### Constraint Violation Results (Target $\epsilon = 0.05$)
 Evaluated on held-out test windows:

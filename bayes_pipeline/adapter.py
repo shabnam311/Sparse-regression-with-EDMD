@@ -8,6 +8,11 @@ import numpy as np
 
 
 def _from_repo(data_dir='data/dataset', split_ratio=(60, 5, 5), seed=42):
+    """
+    Loads trajectories from the baseline loader baseline_stlsq/data_loader.py.
+    Note on split_ratio: (60, 5, 5) sums to 70 because data/dataset contains exactly
+    70 trajectory CSV files, perfectly partitioning 60 train, 5 val, and 5 test.
+    """
     import sys, os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     baseline_dir = os.path.join(root, 'baseline_stlsq')
@@ -20,7 +25,14 @@ def _from_repo(data_dir='data/dataset', split_ratio=(60, 5, 5), seed=42):
     out = {}
     for split_key in ['train', 'val', 'test']:
         trajs = repo_data[split_key][3]  # list of trajectory dicts with 'x' (scaled) and 'u' (scaled)
-        out[split_key] = [(t['x'], t['u']) for t in trajs]
+        split_trajs = []
+        for t in trajs:
+            x, u = t['x'], t['u']
+            assert x.ndim == 2 and x.shape[1] == 3, f"Expected (T, 3) state, got shape {x.shape}"
+            assert u.ndim == 2 and u.shape[1] == 2, f"Expected (T, 2) control, got shape {u.shape}"
+            assert len(u) in (len(x), len(x) - 1), f"Input length mismatch: len(u)={len(u)}, len(x)={len(x)}"
+            split_trajs.append((x, u))
+        out[split_key] = split_trajs
         
     scaler_x, scaler_u = repo_data['scalers']
     mx = scaler_x.mean_ if getattr(scaler_x, 'with_mean', False) else np.zeros(3)

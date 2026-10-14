@@ -1,6 +1,7 @@
-"""Pure-numpy copy of the repo's degree-2 lifting (same column order as PySINDy
-PolynomialLibrary(degree=2, include_bias=False)). The first n columns are the raw states,
-so the projection back to the state is C = [I 0]."""
+"""Pure-NumPy implementation of the degree-2 polynomial state lifting.
+The column order exactly matches baseline_stlsq/lifting.py (lift_state):
+    [vx, vy, omega, vx^2, vy^2, omega^2, vx*vy, vx*omega, vy*omega]
+The first 3 columns are the raw states, so projection back to state space is C = [I 0]."""
 import numpy as np
 
 

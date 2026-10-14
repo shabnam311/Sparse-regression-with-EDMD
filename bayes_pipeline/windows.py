@@ -22,11 +22,51 @@ class Stats:
     def dk(self, k):     # regressor length for step k
         return self.L + self.m * (k + 1)
 
+    def scale_for_effective_samples(self, tau: float):
+        """
+        Scales sufficient statistics by 1 / tau to account for autocorrelated residual
+        samples, yielding an effective sample size N_eff = N / tau.
+        This prevents parameter covariance from collapsing faster than true parameter uncertainty.
+        """
+        if tau <= 1.0:
+            return self
+        return Stats(
+            N=max(int(round(self.N / tau)), 1),
+            G=self.G / tau,
+            XtY=self.XtY / tau,
+            YtY=self.YtY / tau,
+            H=self.H,
+            L=self.L,
+            m=self.m
+        )
+
+
+def estimate_autocorrelation_time(residuals, max_lag=50):
+    """
+    Estimates the residual autocorrelation time tau = 1 + 2 * sum_{k=1}^K rho_k.
+    Used to adjust sufficient statistics to effective sample size N_eff = N / tau.
+    """
+    r = np.asarray(residuals, dtype=float).ravel()
+    n = len(r)
+    if n < 2 * max_lag:
+        return 1.0
+    r_cent = r - np.mean(r)
+    c0 = np.dot(r_cent, r_cent) / n
+    if c0 <= 1e-14:
+        return 1.0
+    tau = 1.0
+    for lag in range(1, min(max_lag, n // 4)):
+        ck = np.dot(r_cent[:-lag], r_cent[lag:]) / (n - lag)
+        rho_k = ck / c0
+        if rho_k <= 0.05:
+            break
+        tau += 2.0 * rho_k
+    return float(max(tau, 1.0))
+
 
 def build_windows(X, U, H, lift, idx):
     Z = lift(X)
-    T, L = Z.shape
-    m = U.shape[1]
+    L = Z.shape[1]
     parts = [Z[idx]] + [U[idx + j] for j in range(H)]
     Phi = np.concatenate(parts, axis=1)
     Y = np.stack([Z[idx + k + 1] for k in range(H)], axis=1)   # (n, H, L)
@@ -38,6 +78,8 @@ def count_windows(trajs, H):
 
 
 def accumulate_stats(trajs, H, lift, keep_prob=1.0, rng=None):
+    if keep_prob < 1.0 and rng is None:
+        rng = np.random.default_rng(0)
     L = lift(trajs[0][0][:1]).shape[1]
     m = trajs[0][1].shape[1]
     d = L + m * H

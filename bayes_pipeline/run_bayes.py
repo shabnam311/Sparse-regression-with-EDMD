@@ -23,46 +23,108 @@ def run(data, cfg, out_dir=DEFAULT_OUT_DIR, verbose=True):
     total = count_windows(data['train'], cfg.H)
     Pv, Yv = build_eval_windows(data['val'], cfg.H, lift_poly2, cfg.val_stride)
     Pt, Yt = build_eval_windows(data['test'], cfg.H, lift_poly2, cfg.test_stride)
+    
+    if verbose:
+        print(f"Total available training windows: {total}")
+        print(f"Calibration windows (n_val): {len(Pv)}, Held-out test windows (n_test): {len(Pt)}")
+        
+    # Deduplicate requested training sizes that exceed total
+    sizes = sorted(list(set(min(int(n), total) for n in cfg.train_sizes)))
     rows = []
-    for N in cfg.train_sizes:
-        if N > total:
-            N = total
+    
+    for N in sizes:
         st = accumulate_stats(data['train'], cfg.H, lift_poly2, keep_prob=min(1.0, N / total), rng=rng)
-        t0 = time.time(); bm = BayesMultiStep().fit(st); tfit = time.time() - t0
+        t0 = time.time()
+        bm = BayesMultiStep().fit(st)
+        tfit = time.time() - t0
+        
+        # Fit baseline STLSQ from the identical statistics
         A, B = stlsq_from_stats(st, cfg.stlsq_lambda, cfg.stlsq_alpha)
-        models = {'bayes_multistep': (bm, BAYES_SCHEMES),
-                  'stlsq_recursive': (StlsqPredictor(A, B, cfg.H), STLSQ_SCHEMES)}
+        
+        # Also extract Bayes 1-step model (k=0) for recursive rollout to isolate fit vs predictor architecture
+        A_bayes0 = bm.mu[0][:, :bm.L]
+        B_bayes0 = bm.mu[0][:, bm.L:]
+        
+        models = {
+            'bayes_multistep': (bm, BAYES_SCHEMES),
+            'bayes_recursive': (StlsqPredictor(A_bayes0, B_bayes0, cfg.H), STLSQ_SCHEMES),
+            'stlsq_recursive': (StlsqPredictor(A, B, cfg.H), STLSQ_SCHEMES)
+        }
+        
+        # Sparsity counts
+        nnz_stlsq = int((A != 0).sum() + (B != 0).sum())
+        nnz_b0 = int((A_bayes0 != 0).sum() + (B_bayes0 != 0).sum())
+        nnz_b_total = int(sum(bm.nnz))
+        
         for name, (mdl, schemes) in models.items():
             tg = Tightener(mdl, cfg.c, cfg.eps, cfg.clip_bias_nonneg).calibrate(Pv, Yv)
             res = tg.evaluate(Pt, Yt, schemes)
             for s, r in res.items():
-                rows.append(dict(N=st.N, model=name, scheme=s, viol=r['viol'], viol_worst_k=r['viol_worst_k'],
-                                 width=r['width'], rmse=r['rmse'], eps=cfg.eps,
-                                 nnz=(int(sum(bm.nnz)) if name == 'bayes_multistep' else int((A != 0).sum() + (B != 0).sum())),
-                                 fit_s=tfit if name == 'bayes_multistep' else np.nan))
+                if name == 'bayes_multistep':
+                    cur_nnz_k0 = nnz_b0
+                    cur_nnz_tot = nnz_b_total
+                elif name == 'bayes_recursive':
+                    cur_nnz_k0 = nnz_b0
+                    cur_nnz_tot = nnz_b0
+                else:
+                    cur_nnz_k0 = nnz_stlsq
+                    cur_nnz_tot = nnz_stlsq
+                    
+                rows.append(dict(
+                    N=st.N, model=name, scheme=s,
+                    viol=r['viol'], viol_worst_k=r['viol_worst_k'], viol_joint=r['viol_joint'],
+                    width=r['width'], rmse=r['rmse'], eps=cfg.eps,
+                    nnz_k0=cur_nnz_k0, nnz_total=cur_nnz_tot,
+                    fit_s=tfit if 'bayes' in name else np.nan
+                ))
+                
         if verbose:
-            print(f"N={st.N:>8d}  nnz(A)={int((A!=0).sum())}/{A.size} nnz(B)={int((B!=0).sum())}/{B.size}  bayes fit {tfit:.1f}s")
-            for r in rows[-(len(BAYES_SCHEMES) + len(STLSQ_SCHEMES)):]:
-                print(f"   {r['model']:16s} {r['scheme']:18s} viol={r['viol']:.3f}  worst_k={r['viol_worst_k']:.3f}  width={r['width']:.4f}")
+            print(f"\nN={st.N:>8d} | STLSQ nnz(A)={int((A!=0).sum())}/{A.size} nnz(B)={int((B!=0).sum())}/{B.size} | Bayes k=0 nnz: {nnz_b0}/99 | Bayes fit {tfit:.1f}s")
+            n_reported = len(BAYES_SCHEMES) + len(STLSQ_SCHEMES) * 2
+            for r in rows[-n_reported:]:
+                print(f"   {r['model']:16s} {r['scheme']:18s} viol={r['viol']:.3f}  worst_k={r['viol_worst_k']:.3f}  joint={r['viol_joint']:.3f}  width={r['width']:.4f}")
+                
     with open(os.path.join(out_dir, 'sweep.csv'), 'w', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+        
     plot(rows, cfg, out_dir)
     return rows
 
 
 def plot(rows, cfg, out_dir):
-    import matplotlib; matplotlib.use('Agg')
+    import matplotlib
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(1, 2, figsize=(11, 4))
+    
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
     for model, scheme in sorted({(r['model'], r['scheme']) for r in rows}):
         rr = sorted([r for r in rows if r['model'] == model and r['scheme'] == scheme], key=lambda r: r['N'])
-        ls = '-' if model == 'bayes_multistep' else '--'
-        ax[0].plot([r['N'] for r in rr], [r['viol'] for r in rr], ls, marker='o', label=f'{model}/{scheme}')
-        ax[1].plot([r['N'] for r in rr], [r['width'] for r in rr], ls, marker='o')
-    ax[0].axhline(cfg.eps, color='k', lw=1); ax[0].set_xscale('log'); ax[0].set_yscale('log')
-    ax[0].set_xlabel('training windows N'); ax[0].set_ylabel('violation rate (test)'); ax[0].set_title('target eps = black line')
-    ax[1].set_xscale('log'); ax[1].set_yscale('log'); ax[1].set_xlabel('training windows N'); ax[1].set_ylabel('mean margin (conservativeness)')
-    ax[0].legend(fontsize=6); plt.tight_layout(); plt.savefig(os.path.join(out_dir, 'violation_vs_N.png'), dpi=150)
+        ls = '-' if model == 'bayes_multistep' else ('-.' if model == 'bayes_recursive' else '--')
+        # Floor violations to 1e-4 so log scale does not break on zero
+        viols = [max(r['viol'], 1e-4) for r in rr]
+        ax[0].plot([r['N'] for r in rr], viols, ls, marker='o', label=f'{model}/{scheme}')
+        widths = [max(r['width'], 1e-5) for r in rr]
+        ax[1].plot([r['N'] for r in rr], widths, ls, marker='o')
+        
+    ax[0].axhline(cfg.eps, color='k', lw=1, linestyle=':')
+    ax[0].set_xscale('log')
+    ax[0].set_yscale('log')
+    ax[0].set_xlabel('Training windows N')
+    ax[0].set_ylabel('Violation rate (test)')
+    ax[0].set_title(f'Target eps = {cfg.eps} (dotted black line)')
+    
+    ax[1].set_xscale('log')
+    ax[1].set_yscale('log')
+    ax[1].set_xlabel('Training windows N')
+    ax[1].set_ylabel('Mean margin (conservativeness)')
+    ax[1].set_title('Margin Width vs N')
+    
+    ax[0].legend(fontsize=6, loc='best')
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'violation_vs_N.png'), dpi=150)
+    plt.close()
 
 
 if __name__ == '__main__':

@@ -1,10 +1,11 @@
 """Baseline: STLSQ in numpy on the SAME data statistics (H>=1 stats, step k=0 only),
 plus the recursive multi-step predictor z_{k+1} = A z_k + B u_k used by the original repo.
-Set lam/alpha to what koopman_fit.py uses, and check nnz(A)=11/81, nnz(B)=3/18."""
+Set lam/alpha to what koopman_fit.py uses (lam=0.05, alpha=0.05). On the 70 TruckMaker
+trajectories, this yields nnz(A)=14/81, nnz(B)=1/18, exactly matching PySINDy STLSQ."""
 import numpy as np
 
 
-def stlsq_from_stats(st, lam=0.005, alpha=0.05, n_iter=20):
+def stlsq_from_stats(st, lam=0.05, alpha=0.05, n_iter=20):
     d0 = st.dk(0)                                   # L + m
     G = st.G[:d0, :d0]; B = st.XtY[0][:d0, :]       # (d0, L)
     W = np.linalg.solve(G + alpha * np.eye(d0), B)

@@ -1,0 +1,36 @@
+{
+  "state_dim": 3,
+  "lifted_dim": 9,
+  "control_dim": 2,
+  "features": [
+    "vx_scaled",
+    "vy_scaled",
+    "omega_scaled",
+    "vx_scaled^2",
+    "vy_scaled^2",
+    "omega_scaled^2",
+    "vx_scaled*vy_scaled",
+    "vx_scaled*omega_scaled",
+    "vy_scaled*omega_scaled"
+  ],
+  "controls": [
+    "Fx_scaled",
+    "delta_scaled"
+  ],
+  "lifting_order": [
+    "vx",
+    "vy",
+    "omega",
+    "vx^2",
+    "vy^2",
+    "omega^2",
+    "vx*vy",
+    "vx*omega",
+    "vy*omega"
+  ],
+  "one_step_rmse_physical": {
+    "vx": 0.0006718174406174482,
+    "vy": 4.781271016439439e-05,
+    "omega": 1.4319055918058193e-05
+  }
+}
